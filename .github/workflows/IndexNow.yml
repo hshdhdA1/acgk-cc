@@ -1,33 +1,19 @@
-name: "IndexNow (HTML Only)"
+name: "IndexNow"
 on:
   push:
     branches:
       - main
   schedule:
-    - cron: '0 0,12 * * *'  # 每天 UTC 0 点和 12 点运行
-
+    - cron: '0 0,12 * * *'
 jobs:
   check-and-submit:
     runs-on: ubuntu-latest
     steps:
-      - name: 提取 HTML 链接
-        run: |
-          # 1. 下载原始 XML Sitemap
-          curl -s -o sitemap.xml https://acgk.cc/sitemap.xml
-          
-          # 2. 使用正则表达式提取 .html URL（严格匹配路径结尾）
-          grep -oP '<loc>\Khttps?://[^<]+\.html(?![^\s<])' sitemap.xml > html-urls.txt
-          
-          # 3. 格式化为逗号分隔的字符串
-          echo "HTML_URLS=$(tr '\n' ',' < html-urls.txt | sed 's/,$//')" >> $GITHUB_ENV
-
-      - name: 提交到 Bing IndexNow
+      - name: submit-to-bing
         uses: bojieyang/indexnow-action@v2
         with:
-          urls: ${{ env.HTML_URLS }}  # 直接传递过滤后的 URL 列表
+          sitemap-location: "https://acgk.cc/sitemap.xml"
           endpoint: "www.bing.com"
+          limit: 100
           key: ${{ secrets.INDEXNOW_KEY }}
           key-location: ${{ secrets.INDEXNOW_KEY_LOCATION }}
-          limit: 100
-          lastmod-required: false  # 禁用 lastmod 检查
-          failure-strategy: ignore  # 提交失败不中断流程
